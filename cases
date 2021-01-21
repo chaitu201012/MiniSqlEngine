@@ -1,0 +1,7 @@
+select act_id_a , sum(mov_id_am) , count(earnings) from actor , actor_movie , movie  where (act_gender=0 or act_id_a>110) and mov_year>2000 group by act_id_a order by act_id_a;
+
+
+select act_id_a , sum(mov_id_am) , count(earnings) from actor , actor_movie , movie  group by act_id_a order by act_id_a desc;
+
+
+select distinct act_gender from actor order by act_gender;
