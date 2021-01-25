@@ -11,7 +11,8 @@ import copy
 
 ###############################global variables#################################
 tables_info=OrderedDict() 
-FD="./files/"
+#FD="./files/"
+FD=""
 database=OrderedDict()
 list_dict=[]
 ##############################################################
@@ -154,7 +155,12 @@ def simpleProject(query,columns,tables,whereTable):
     #print("\n")
     #print("output:")
     if "*" in columns:
-        print(','.join([tables[0]+"."+str(attribute) for attribute in tables_info[tables[0]]]))
+        tablePrinting=[]
+        for i in tables:
+            for attribute in tables_info[i]:
+                tablePrinting.append(i+"."+str(attribute))
+        print(",".join(map(str,tablePrinting)))
+        #print(','.join([tables[0]+"."+str(attribute) for attribute in tables_info[tables[0]]]))
         data=[]
 
         for i in whereTable["records"]:
@@ -327,6 +333,7 @@ def filterCondition(crossed_table,columns,tables,query):
     query=query.replace('>',"$")
     query=query.replace('<',"^")
     query=query.replace('=',"&")
+    #query=query.replace(" ","")
     c=query.split()
     condition=[]
 
@@ -348,12 +355,11 @@ def filterCondition(crossed_table,columns,tables,query):
 
     
     #condition=query.split()
-    #print(query)
+    #print(condition)
     
     operand1=[]
     operand2=[]
     given_operator={}
-    condTag=""
     if flagTwo:
         x=False
         y=False  #flags to check if two operators are found if found we can break the loop
@@ -375,16 +381,57 @@ def filterCondition(crossed_table,columns,tables,query):
         if not(x and y):
             print("operator is not defined only the following operator were defined  "+" ".join(map(str, operators)))
     if not flagTwo:
+        condition=["".join(map(str,condition))]
+        #print(condition)
         for o in operators:
             if o in condition[0]:
                 operand1.extend(condition[0].split(o))
                 given_operator["first"]=operators_map[o]
                 break
         
+    
+    count=0
+    for i in operand1:
+        if i.isdigit():
+            count+=1
+    if count==len(operand1):
+        print("Invalid condition in where all are digits")
+        exit()
+    count=0
+    for i in operand2:
+        if i.isdigit():
+            count+=1
+    if count==len(operand2):
+        print("Invalid condition in where all are digits")
+        exit()
+    count=0
+    reverseFlag=False
+    for i in range(len(operand1)-1):
+        if count==0 and (operand1[i].isdigit()) and (not operand1[i+1].isdigit()):
+            reverseFlag=True
+            break
+    if reverseFlag:
+        operand1=operand1[::-1]
+
+    count=0
+    reverseFlag=False
+    for i in range(len(operand2)-1):
+        if count==0 and (operand2[i].isdigit()) and (not operand2[i+1].isdigit()):
+            reverseFlag=True
+            break
+    if reverseFlag:
+        operand2=operand2[::-1]
+
     #print(operand1)
     #print(operand2)
+
+        
+
+
     #print(given_operator)
     #print(crossed_table)
+
+    
     whereTable=OrderedDict()
     whereTable["columns"]=copy.deepcopy(crossed_table["columns"])
     whereTable["records"]=[]
@@ -552,7 +599,7 @@ def filterCondition(crossed_table,columns,tables,query):
 
 
 def simpleAggregate(whereTable,query,columns,tables,aggrFuncWithCol):
-    print(aggrFuncWithCol)
+    #print(aggrFuncWithCol)
     index=0
     aggregate_values=[]
     for n in range(len(aggrFuncWithCol)):
@@ -572,6 +619,7 @@ def simpleAggregate(whereTable,query,columns,tables,aggrFuncWithCol):
                 aggregate_values.append(value)
             else:
                 aggregate_values.append("")
+            value=-9999999999
         if func=="min":
             value=9999999999
             for i in range(len(whereTable["records"])):
@@ -581,12 +629,14 @@ def simpleAggregate(whereTable,query,columns,tables,aggrFuncWithCol):
                 aggregate_values.append(value)
             else:
                 aggregate_values.append("")
+            value=9999999999
         if func=="sum":
             value=0
             for i in range(len(whereTable["records"])):
                 data=int(whereTable["records"][i][index])
                 value=value+data
             aggregate_values.append(value)
+            value=0
         if func=="avg":
             value=0
             for i in range(len(whereTable["records"])):
@@ -594,6 +644,7 @@ def simpleAggregate(whereTable,query,columns,tables,aggrFuncWithCol):
                 value=value+data
             val=value//len(whereTable["records"])
             aggregate_values.append(val)
+            value=0
         
         if func=="count":
             aggregate_values.append(len(whereTable["records"]))
@@ -669,6 +720,7 @@ def handleGroups(whereTable,query,columns,tables,flagAggregate,aggrFuncWithCol) 
     if groupedColumn.lower() not in nonAggregateColumns:
         print("grouped column must be present in the select columns")
         exit()
+    
     grouped_table=OrderedDict()
     grouped_table["columns"]=whereTable["columns"]
     grouped_table["records"]=[]
@@ -724,6 +776,7 @@ def handleGroups(whereTable,query,columns,tables,flagAggregate,aggrFuncWithCol) 
                 for k in j:
                     val=[value]
                     k.extend(val)
+                value=-9999999999
         if func=="min":
             value=9999999999
             for j in grouped_table["records"]:
@@ -733,6 +786,7 @@ def handleGroups(whereTable,query,columns,tables,flagAggregate,aggrFuncWithCol) 
                 for k in j:
                     val=[value]
                     k.extend(val)
+                value=9999999999
         if func=="sum":
             value=0
             for j in grouped_table["records"]:
@@ -743,6 +797,7 @@ def handleGroups(whereTable,query,columns,tables,flagAggregate,aggrFuncWithCol) 
                 #print("sum of the group earnings"+str(value))
                 for k in j:
                     k.extend([value])
+                value=0
         if func=="avg":
             value=0
             for j in grouped_table["records"]:
@@ -751,7 +806,8 @@ def handleGroups(whereTable,query,columns,tables,flagAggregate,aggrFuncWithCol) 
                     value=value + data 
                 for k in j:
                     k.extend([value//len(j)])
-            return 
+                value=0
+            #return 
         
         if func=="count":
             for j in grouped_table["records"]:
@@ -778,7 +834,7 @@ def printTable(query,columns,tables,whereTable,grouped_table,flag_dict,flagAggre
     #print(whereTable)
 
     if not(flag_dict["groupFlag"] or flag_dict["orderFlag"] or flagAggregate or flagDistinct):
-        print("entered here:1")
+        #print("entered here:1")
         #print(whereTable)
         if len(tables)>=1:
             simpleProject(query,columns,tables,whereTable)
@@ -786,7 +842,7 @@ def printTable(query,columns,tables,whereTable,grouped_table,flag_dict,flagAggre
 
     # another case where flag is present and no flags  need to code 
     if not(flag_dict["groupFlag"] or flag_dict["orderFlag"]) and flagAggregate:
-        print("entered here:2")
+        #print("entered here:2")
         if len(tables)>=1:
             printable=[]
             #for i in aggrFuncWithCol:
@@ -817,7 +873,7 @@ def printTable(query,columns,tables,whereTable,grouped_table,flag_dict,flagAggre
 
         #print(whereTable)
     if flag_dict["groupFlag"]:
-        print("entered here:4")
+        #print("entered here:4")
         print_columnslist=[]
         col_index=[]
         for i in columns:
@@ -894,7 +950,7 @@ def printTable(query,columns,tables,whereTable,grouped_table,flag_dict,flagAggre
             exit()
 
     if flagDistinct:
-        print("entered here:3")
+        #print("entered here:3")
         columnslist=[]
         columnslist.append("distinct")
         col_index=[]
@@ -933,7 +989,7 @@ def printTable(query,columns,tables,whereTable,grouped_table,flag_dict,flagAggre
             #print(",".join(map(str,print_columnslist)))
             exit()   
     if flag_dict["orderFlag"] and not(flag_dict["groupFlag"]):
-        print("entered here:5")
+        #print("entered here:5")
         orderTable=whereTable
         ind=0
         for i in query:
@@ -1032,21 +1088,43 @@ def identifyQuery(query,columns,tables):
 if __name__ == "__main__":
     #print("This is the name of the program:", sys.argv[0]) 
     #print("Argument List:", str(sys.argv)) 
-    metaDataFile="./files/metadata.txt"
+    #metaDataFile="./files/metadata.txt"
+    metaDataFile=FD+"metadata.txt"
     metadataTables(metaDataFile)
-    print(tables_info)
+    #print(tables_info)
     #print(tables_info.has_key("table3"))
+    if (sys.argv[1])=="":
+        print("You need to provide query ")
+        exit()
+
     query=sys.argv[1]
+    #print(query)
+    ##query=(" ".join(map(str,sys.argv)))
+    #print(query)
+    
+    #print(query)
     #everything will be in upper case 
     queryTokens=getQuery(query)  # second index  contains the columns of the tables seprated by columns
-    print(queryTokens)
+    #print(queryTokens)
    
     columns_present=getCols(queryTokens) # getting the columns of the query for further simplicity
-    print(columns_present)
+    #print(columns_present)
+    for i in columns_present:
+        flagPresent=False
+        for key,values in tables_info.items():
+            if (i in values) or i.lower()=="distinct" or i=="*" or i[:5].lower()=="count" or i[:3].lower()=="max" or i[:3].lower()=="min" or i[:3].lower()=="sum" or i[:3].lower()=="avg":
+                flagPresent=True
+        if not flagPresent:
+            print("column "+i+" is not present any of the table")
+            exit()
+    for i in columns_present:
+        if i.lower()=="max(*)" or i.lower()=="min(*)" or i.lower()=="sum(*)" or i.lower()=="avd(*)" :
+            print(" * can come only with count aggregate function")
+            exit()
 
     tables=getTables(queryTokens)
     
-    print(tables)
+    #print(tables)
 
     checkCorrectness(queryTokens,columns_present,tables) 
 
