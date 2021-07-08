@@ -26,6 +26,11 @@ A Mini SQL engine coded as part of data systems course.
   - `select * from table1, table2`.
   - `select a, t1.b, c, t2.d from table1 as t1, table2 as t2 where t1.b = t2.b and t2.d >= 0`
 
+- Other complex queries:
+  - `select act_id_a , sum(mov_id_am) , count(earnings) from actor , actor_movie , movie  where (act_gender=0 or act_id_a>110) and mov_year>2000 group by act_id_a order by act_id_a;`
+  - `select act_id_a , sum(mov_id_am) , count(earnings) from actor , actor_movie , movie  group by act_id_a order by act_id_a desc;`
+  - `select distinct act_gender from actor order by act_gender;`
+
 > `In the current implementation I assumed the fields to be unique. As part of further improvement we can add a method to append tablename to the field and parse the queries.`
 
 ## How to run the queries:
